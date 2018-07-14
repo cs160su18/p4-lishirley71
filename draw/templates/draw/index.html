@@ -28,41 +28,51 @@
     // getting the URL (you may want to use for Exercise 3)
     var url = window.location.href;
     var socket = new WebSocket('ws://' + window.location.hostname + ':8765/');
-    socket.id = Math.floor(100000*Math.random());
-    
+   socket.id = Math.floor(100000*Math.random());
+    var users = {};
   
-    socket.onopen = function (event) {
-      socket.send("Hello Server!");
-    }
-    
     var path = new paper.Path();
   
     var point;
+    //https://www.paulirish.com/2009/random-hex-color-code-snippets/
     socket.colorStroke = '#' + (function co(lor){   return (lor +=
               [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)])
               && (lor.length == 6) ?  lor : co(lor); })('');
   
-    tool.onMouseMove = function (event) {
-      point = {x: event.point.x, y: event.point.y, identity: socket.id,
-              color: socket.colorStroke};
-      var message = JSON.stringify(point);
+    socket.onopen = function (event) {
+      /*socket.send(JSON.stringify(socket.id));*/
+      socket.send(JSON.stringify({id: socket.id, stCo: socket.colorStroke, isUser: true}));
+    }
+     
+    
+   tool.onMouseMove = function (event) {
+     
+     point = {x: event.point.x, y: event.point.y, identity: socket.id,
+              color: socket.colorStroke, isUser: false};
+     
+      var message = JSON.stringify({id: socket.id, data: point});
       socket.send(message); 
       console.log(socket.id);
 
     }
     
     socket.onmessage = function(receivedMessage) {
-      if (receivedMessage.data === "Hello Server!") {
-        console.log('Message has been received by server.');
-      } else {
+        var msgRecieved = JSON.parse(receivedMessage.data);
+        if (msgRecieved.isUser) {
+          users[msgRecieved.id] = msgRecieved.stCo;
+          console.log(msgRecieved.colorStroke);
+        }
+      console.log(users);
         var receivedMsg = JSON.parse(receivedMessage.data);
         var newPoint = new paper.Point(receivedMsg.x, receivedMsg.y);
         if (receivedMsg.identity === socket.id) {
+
            path.strokeColor = receivedMsg.color;
            path.add(newPoint);
         }
-      }
+      
     };
+  
   
     socket.onclose = function(e) {
       console.error('Chat socket closed unexpectedly');
