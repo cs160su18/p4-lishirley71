@@ -25,7 +25,7 @@ SECRET_KEY = '*6t50m_p^gif@4sz!590)u_!#9c-u8l9+7-v+*_op=v^#7wkv9'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["p4-lishirley71-lishirley71785027.codeanyapp.com"]
+ALLOWED_HOSTS = ["p4-lishirley71-timothystepro441973.codeanyapp.com"]
 
 
 # Application definition

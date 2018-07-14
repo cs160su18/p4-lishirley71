@@ -9,16 +9,32 @@
     <link rel="stylesheet" type="text/css" href="{% static 'draw/vendor/bootstrap/css/bootstrap.min.css' %}">
     <script type="text/javascript" src="{% static 'draw/vendor/jquery/jquery-3.3.1.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'draw/vendor/paper/paper-full.min.js' %}"></script>
-
+    <script type="text/javascript" src="{% static 'draw/javascripts/Task1a.js' %}"></script>
+    
     <style type="text/css">
     </style>
 
 </head>
 <body>
+    <div class="row">
+      <div class="col-sm-3"></div>
+      <div class="col-sm-6">
+        <form action="t1a">
+          <button type="submit" class="btn btn-primary" >Task 1a</button>
+        </form>
+        <form action="t1b">
+          <button type="submit" class="btn btn-primary" >Task 1a</button>
+        </form>
+        <form action="t1c">
+          <button type="submit" class="btn btn-primary" >Task 1a</button>
+        </form>
+      </div>
+      <div class="col-sm-6"></div>
+    </div>
     <!-- You may change the dimensions of this canvas -->
-    <canvas id="myCanvas" width="750px" height="750px"></canvas>
+<!--     <canvas id="myCanvas" width="750px" height="750px"></canvas> -->
 </body>
-<script>
+<!-- <script>
 
     // setting up the canvas and one paper tool
     var canvas = document.getElementById('myCanvas');
@@ -82,5 +98,5 @@
     
     
 
-</script>
+</script> -->
 </html>
