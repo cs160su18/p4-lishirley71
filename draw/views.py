@@ -13,7 +13,10 @@ def task1b(request):
 
 def task1c(request):
     return render(request, 'draw/t1c.html', {})  
-  
+
+def task2(request):
+  return render(request, 'draw/t2.html', {})  
+
 def room(request, room_name):
     return render(request, 'draw/room.html', {
         'room_name_json': mark_safe(json.dumps(room_name))
