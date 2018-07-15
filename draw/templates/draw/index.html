@@ -17,6 +17,9 @@
 <body>
     <!-- You may change the dimensions of this canvas -->
     <canvas id="myCanvas" width="750px" height="750px"></canvas>
+    <p id="shake">    </p>
+    <p id="acc"></p>
+    <p id="gamma"></p>
 </body>
 <script>
 
@@ -24,62 +27,152 @@
     var canvas = document.getElementById('myCanvas');
     paper.setup(canvas);
     var tool = new paper.Tool();
-
+    
     // getting the URL (you may want to use for Exercise 3)
     var url = window.location.href;
-    var socket = new WebSocket('ws://' + window.location.hostname + ':8765/');
-   socket.id = Math.floor(100000*Math.random());
-    var users = {};
-  
+    
+    var userPaths = {};
     var path = new paper.Path();
-  
     var point;
+    var acceleration = [];
+    var movingAvgLen = 10;
+  
+    var average = function (items) {
+      var sum = 0;
+      for (var i = 0; i < items.length; i++) {
+         sum += items[i];
+      }
+      return sum / items.length;
+    };
+  
+    let recentX, recentY, recentZ;
+    var shakeCount = 0;
+  
+    var colorStroke = '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
+    var rightTiltCount = 0;
+  
+    var recentGamma;
+  
+    window.addEventListener('devicemotion', function(e) {
+      let acc = e.acceleration;
+      $("#acc").text(acc.x + ' m/s2');
+      if(!acc.hasOwnProperty('x')) {
+        acc = e.accelerationIncludingGravity;
+      }
+
+      if(!acc.x) return;
+
+      if(Math.abs(acc.x) >= 3 &&
+      Math.abs(acc.y) >= 3 &&
+      Math.abs(acc.z) >= 3) {
+
+        if(!recentX) {
+          recentX = acc.x;
+          recentY = acc.y;
+          recentZ = acc.z;
+          return;
+        }
+
+        let delX = Math.abs(acc.x - recentX);
+        let delY = Math.abs(acc.y - recentY);
+        let delZ = Math.abs(acc.z - recentZ);
+
+        if(delX + delY + delZ > 3) {
+          shakeCount++;
+        } else {
+          shakeCount = Math.max(0, --shakeCount);
+        }
+
+        if(shakeCount > 2) {
+           $("#shake").text('You shook me');
+          if (path) {
+            path.remove();
+            path = new paper.Path();
+          }
+          shakeCount = 0;
+        }
+
+        recentX = acc.x;
+        recentY = acc.y;
+        recentZ = acc.z;
+
+      }
+    });
+  
+    window.addEventListener('deviceorientation', function(e) {
+      $("#gamma").text("gamma: " + e.gamma);
+       //change stroke color if detected orientation tilted to the right (gamma) 
+      if (e.gamma > 45 && e.gamma < 90) {
+          path.strokeColor = var colorStroke = '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
+      }  
+    });
+
+      
+   tool.onMouseMove = function (event) {
+    point = {x: event.point.x, y: event.point.y};
+    path.strokeColor = 'black';
+    path.add(new paper.Point(event.point.x, event.point.y));       
+   }
+    
+    /* Task 1a
+    var socket = new WebSocket('ws://' + window.location.hostname + ':8765/');
+    socket.id = Math.floor(100000*Math.random());
+    var userPaths = {};
+    var path = new paper.Path();
+    var master = true;
+    var point;
+
     //https://www.paulirish.com/2009/random-hex-color-code-snippets/
-    socket.colorStroke = '#' + (function co(lor){   return (lor +=
-              [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)])
-              && (lor.length == 6) ?  lor : co(lor); })('');
+    var colorStroke = '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
   
     socket.onopen = function (event) {
-      /*socket.send(JSON.stringify(socket.id));*/
-      socket.send(JSON.stringify({id: socket.id, stCo: socket.colorStroke, isUser: true}));
+      socket.send(JSON.stringify({id: socket.id, "open": true}));
+      console.log('Master!');
     }
-     
     
    tool.onMouseMove = function (event) {
-     
-     point = {x: event.point.x, y: event.point.y, identity: socket.id,
-              color: socket.colorStroke, isUser: false};
-     
-      var message = JSON.stringify({id: socket.id, data: point});
-      socket.send(message); 
-      console.log(socket.id);
+     if (!master) {
+        point = {x: event.point.x, y: event.point.y};
+        var message = JSON.stringify({id: socket.id, color: colorStroke, point: point});
 
+        socket.send(message); 
+        path.strokeColor = colorStroke;
+        path.add(new paper.Point(event.point.x, event.point.y));       
+     }
     }
     
-    socket.onmessage = function(receivedMessage) {
-        var msgRecieved = JSON.parse(receivedMessage.data);
-        if (msgRecieved.isUser) {
-          users[msgRecieved.id] = msgRecieved.stCo;
-          console.log(msgRecieved.colorStroke);
+    socket.onmessage = function(received) {
+      var data = JSON.parse(received.data);
+      if (data.id !== socket.id && "open" in data) {
+        master = false;
+        console.log('No longer master');
+      }
+     
+      
+      if (master) {
+        var point = data.point;
+        var color = data.color;
+        
+        if (!(data.id in userPaths)) {
+          userPaths[data.id] = new paper.Path();
         }
-      console.log(users);
-        var receivedMsg = JSON.parse(receivedMessage.data);
-        var newPoint = new paper.Point(receivedMsg.x, receivedMsg.y);
-        if (receivedMsg.identity === socket.id) {
 
-           path.strokeColor = receivedMsg.color;
-           path.add(newPoint);
+        if (data.id !== socket.id) {
+          var newPoint = new paper.Point(point.x, point.y);
+          userPaths[data.id].strokeColor = color;
+          userPaths[data.id].add(newPoint);
         }
+        
+      }
+      
+
       
     };
   
   
     socket.onclose = function(e) {
       console.error('Chat socket closed unexpectedly');
-    };
-    
-    
-    
+    }; */
     
 
 </script>
