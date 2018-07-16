@@ -37,10 +37,13 @@
     var url = window.location.href;
     var socket = new WebSocket('ws://' + window.location.hostname + ':8765/');
     socket.id = Math.floor(100000*Math.random());
-    socket.timeCreated = Date.now();
     var userPaths = {};
     var path = new paper.Path();
     var master = true;
+    var isTabOn = false;
+    var isPlayerSet = false;
+    var socketPlayer;
+    var player; 
     var users = {};
   
     var villageURL = 'http://agroparty.sumy.ua/wp-content/uploads/2016/09/village.png';
@@ -72,18 +75,45 @@
       console.log('Master!');
     }
     
-    if (!master) {
-      
+
+    window.onfocus = function () {
+      isTabOn = true;
+      if (!master) {
+        console.log('You are in focus');
+        console.log('First, set the player');
+        if (!isPlayerSet) {
+          socket.send(JSON.stringify({id: socket.id, player: 'p1'}));
+          socketPlayer = p1Raster;
+          p2Raster.visible = false;
+          isPlayerSet = true;
+          player = 1;
+        }
+        
+      } else {
+        console.log('You are in focus');
+        console.log('Just watch');
+      }
+    }; 
+   
+    window.onblur = function () {
+      isTabOn = false;
     }
-    
+
+
     socket.onmessage = function(received) {
       var data = JSON.parse(received.data);
       if (data.id !== socket.id && "open" in data) {
         master = false;
         console.log('No longer master');
       }
-     
       
+      if (data.id !== socket.id && "player" in data && !isTabOn && !master) {
+        //set players for nonactive tab 
+        isPlayerSet = true;
+        p1Raster.visible = false;
+        socketPlayer = p2Raster;
+        player = 2;
+      } 
       
       if (master) {
         villageRaster.visible = true;
