@@ -56,6 +56,8 @@
     var p1Raster = new paper.Raster({source: p1URL});
     var p2Raster = new paper.Raster({source: p2URL});
     
+     
+    
     var totalScore = 0;
     var score = new paper.PointText(new paper.Point(260, 300));
     score.fillColor = 'black';
@@ -91,12 +93,43 @@
       console.log('Master!');
     }
     
-    var monsterGenerator = function () {
-       
+    var monsterRasters = [];
+    var monsterIndex = 0;
+    var monsterDistCountP1 = 0;
+    var monsterDistCountP2 = 0;
+    var monsterRaster;
+  
+    var generate;
+    
+    function startGame () {
+      generate = setInterval(monsterGenerator, 3000);
     }
-    
-    monsterGenerator();
-    
+  
+    function monsterGenerator () {
+      console.log('Generating monsters');
+      monsterRaster = new paper.Raster(monsterURL);
+      monsterRasters.push(monsterRaster);
+      monsterRasters[monsterIndex].on('load', function() {
+        monsterRasters[monsterIndex].size = new paper.Size(150, 110);
+        var which = Math.floor((Math.random() * 2) + 1);
+        if (which == 1 ){ 
+          monsterRasters[monsterIndex].position = new paper.Point(p1Raster.position.x + 100 + monsterDistCountP1, p1Raster.position.y);
+          monsterDistCountP1 += 30;
+        } else {
+          monsterRasters[monsterIndex].position = new paper.Point(p2Raster.position.x + 100 + monsterDistCountP2, p2Raster.position.y);
+          monsterDistCountP2 += 30;
+        }
+       monsterIndex += 1;
+
+      });
+      if (monsterRasters.length == 5) {
+        clearInterval(generate);
+        console.log('Maximum of 5 monsters for now');
+      }
+    };
+  
+  startGame();
+
     
 
     window.onfocus = function () {
