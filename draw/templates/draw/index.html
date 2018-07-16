@@ -60,15 +60,26 @@
     var score = new paper.PointText(new paper.Point(260, 300));
     score.fillColor = 'black';
     score.content = 'Total Score: ' + totalScore;
+    
+    var p1Label;
+    var p2Label; 
 
     p1Raster.on('load', function () {
       p1Raster.size = new paper.Size(150, 150);
       p1Raster.position = new paper.Point(200, 200);
+      
+      p1Label = new paper.PointText(new paper.Point(p1Raster.position.x, p1Raster.position.y - 50));
+      p1Label.fillColor = 'black';
+      p1Label.content = 'Player 1';
     });
   
     p2Raster.on('load', function () {
       p2Raster.size = new paper.Size(150, 150);
       p2Raster.position = new paper.Point(400, 200);
+      
+      p2Label = new paper.PointText(new paper.Point(p2Raster.position.x, p2Raster.position.y - 50));
+      p2Label.fillColor = 'black';
+      p2Label.content = 'Player 2';
     });
     
     villageRaster.on('load', function () {
@@ -99,6 +110,7 @@
           p2Raster.visible = false;
           isPlayerSet = true;
           player = 1;
+          p2Label.visible = false;
           console.log('Player 1 Set');
         }
        
@@ -134,12 +146,15 @@
         socketPlayer = p2Raster;
         player = 2;
         console.log('Player 2 Set');
+        p1Label.visible = false;
       } 
       
       if (master) {
         villageRaster.visible = true;
         p1Raster.visible = true;
         p2Raster.visible = true;  
+        p1Label.visible = true;
+        p2Label.visible = true;
       }
       
 
