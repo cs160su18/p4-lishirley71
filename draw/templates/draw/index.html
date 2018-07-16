@@ -55,6 +55,11 @@
     var villageRaster = new paper.Raster({source: villageURL});
     var p1Raster = new paper.Raster({source: p1URL});
     var p2Raster = new paper.Raster({source: p2URL});
+    
+    var totalScore = 0;
+    var score = new paper.PointText(new paper.Point(260, 300));
+    score.fillColor = 'black';
+    score.content = 'Total Score: ' + totalScore;
 
     p1Raster.on('load', function () {
       p1Raster.size = new paper.Size(150, 150);
@@ -75,22 +80,37 @@
       console.log('Master!');
     }
     
+    var monsterGenerator = function () {
+       
+    }
+    
+    monsterGenerator();
+    
+    
 
     window.onfocus = function () {
       isTabOn = true;
       if (!master) {
         console.log('You are in focus');
-        console.log('First, set the player');
         if (!isPlayerSet) {
+          console.log('First, set the player');
           socket.send(JSON.stringify({id: socket.id, player: 'p1'}));
           socketPlayer = p1Raster;
           p2Raster.visible = false;
           isPlayerSet = true;
           player = 1;
+          console.log('Player 1 Set');
         }
+       
+       if (player == 1) {
+         
+       }
         
+       if (player == 2) {
+         
+       }
       } else {
-        console.log('You are in focus');
+        console.log('You are in focus of display');
         console.log('Just watch');
       }
     }; 
@@ -113,6 +133,7 @@
         p1Raster.visible = false;
         socketPlayer = p2Raster;
         player = 2;
+        console.log('Player 2 Set');
       } 
       
       if (master) {
