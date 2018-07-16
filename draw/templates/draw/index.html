@@ -11,15 +11,20 @@
     <script type="text/javascript" src="{% static 'draw/vendor/paper/paper-full.min.js' %}"></script>
 
     <style type="text/css">
+      
+      .player {
+        width: 100px;
+      }
     </style>
 
 </head>
 <body>
     <!-- You may change the dimensions of this canvas -->
+  
     <canvas id="myCanvas" width="750px" height="750px"></canvas>
     <p id="shake">    </p>
     <p id="acc"></p>
-    <p id="gamma"></p>
+    <p id="gamma"></p>-
 </body>
 <script>
 
@@ -27,44 +32,90 @@
     var canvas = document.getElementById('myCanvas');
     paper.setup(canvas);
     var tool = new paper.Tool();
-    
+  
     // getting the URL (you may want to use for Exercise 3)
     var url = window.location.href;
-    
+    var socket = new WebSocket('ws://' + window.location.hostname + ':8765/');
+    socket.id = Math.floor(100000*Math.random());
+    socket.timeCreated = Date.now();
     var userPaths = {};
     var path = new paper.Path();
-    var point;
-    var acceleration = [];
-    var movingAvgLen = 10;
+    var master = true;
+    var users = {};
   
-    var average = function (items) {
-      var sum = 0;
-      for (var i = 0; i < items.length; i++) {
-         sum += items[i];
+    var villageURL = 'http://agroparty.sumy.ua/wp-content/uploads/2016/09/village.png';
+    var p1URL = 'https://s3.amazonaws.com/gameartpartnersimagehost/wp-content/uploads/2016/06/Chibi-Knight-3-Royalty-Free-Game-Art.png';
+    var p2URL = 'https://s3.amazonaws.com/gameartpartnersimagehost/wp-content/uploads/2016/06/Arabian-Executioner-Royalty-Free-Game-Art.png';
+    var monsterURL = 'http://www.clker.com/cliparts/a/7/3/e/1238700489806164845StudioFibonacci_Cartoon_monsters_3.svg.hi.png';
+  
+  
+    var villageRaster = new paper.Raster({source: villageURL});
+    var p1Raster = new paper.Raster({source: p1URL});
+    var p2Raster = new paper.Raster({source: p2URL});
+
+    p1Raster.on('load', function () {
+      p1Raster.size = new paper.Size(150, 150);
+      p1Raster.position = new paper.Point(200, 200);
+    });
+  
+    p2Raster.on('load', function () {
+      p2Raster.size = new paper.Size(150, 150);
+      p2Raster.position = new paper.Point(400, 200);
+    });
+    
+    villageRaster.on('load', function () {
+       villageRaster.position = new paper.Point(325, 0);
+    });
+  
+    socket.onopen = function (event) {
+      socket.send(JSON.stringify({id: socket.id, "open": true}));
+      console.log('Master!');
+    }
+    
+    if (!master) {
+      
+    }
+    
+    socket.onmessage = function(received) {
+      var data = JSON.parse(received.data);
+      if (data.id !== socket.id && "open" in data) {
+        master = false;
+        console.log('No longer master');
       }
-      return sum / items.length;
+     
+      
+      
+      if (master) {
+        villageRaster.visible = true;
+        p1Raster.visible = true;
+        p2Raster.visible = true;  
+      }
+      
+
+      
     };
   
-    let recentX, recentY, recentZ;
+  
+    socket.onclose = function(e) {
+      console.error('Chat socket closed unexpectedly');
+    };
+    
+    /*var userPaths = {};
+    var path = new paper.Path();
+    var point;
+
+    //https://www.raymondcamden.com/2017/04/25/using-device-motion-on-the-web  
+  
+    var recentX, recentY, recentZ;
     var shakeCount = 0;
-  
-    var colorStroke = '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
-    var rightTiltCount = 0;
-  
-    var recentGamma;
+     
+    path.strokeWidth = 10;
   
     window.addEventListener('devicemotion', function(e) {
-      let acc = e.acceleration;
+      var acc = e.acceleration;
       $("#acc").text(acc.x + ' m/s2');
-      if(!acc.hasOwnProperty('x')) {
-        acc = e.accelerationIncludingGravity;
-      }
 
-      if(!acc.x) return;
-
-      if(Math.abs(acc.x) >= 3 &&
-      Math.abs(acc.y) >= 3 &&
-      Math.abs(acc.z) >= 3) {
+      if(Math.abs(acc.x) >= 3 && Math.abs(acc.y) >= 3 && Math.abs(acc.z) >= 3) {
 
         if(!recentX) {
           recentX = acc.x;
@@ -73,9 +124,9 @@
           return;
         }
 
-        let delX = Math.abs(acc.x - recentX);
-        let delY = Math.abs(acc.y - recentY);
-        let delZ = Math.abs(acc.z - recentZ);
+        var delX = Math.abs(acc.x - recentX);
+        var delY = Math.abs(acc.y - recentY);
+        var delZ = Math.abs(acc.z - recentZ);
 
         if(delX + delY + delZ > 3) {
           shakeCount++;
@@ -88,6 +139,7 @@
           if (path) {
             path.remove();
             path = new paper.Path();
+            path.strokeWidth = 10;
           }
           shakeCount = 0;
         }
@@ -101,79 +153,18 @@
   
     window.addEventListener('deviceorientation', function(e) {
       $("#gamma").text("gamma: " + e.gamma);
-       //change stroke color if detected orientation tilted to the right (gamma) 
-      if (e.gamma > 45 && e.gamma < 90) {
-          path.strokeColor = '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
-      }  
-    });
+      
+      //https://www.paulirish.com/2009/random-hex-color-code-snippets/
+      if (Math.floor(e.gamma) == 10) {
+            path.strokeColor = '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
+    }});
 
       
    tool.onMouseMove = function (event) {
     point = {x: event.point.x, y: event.point.y};
     path.strokeColor = 'black';
     path.add(new paper.Point(event.point.x, event.point.y));       
-   }
+   }*/
     
-    /* Task 1a
-    var socket = new WebSocket('ws://' + window.location.hostname + ':8765/');
-    socket.id = Math.floor(100000*Math.random());
-    var userPaths = {};
-    var path = new paper.Path();
-    var master = true;
-    var point;
-
-    //https://www.paulirish.com/2009/random-hex-color-code-snippets/
-    var colorStroke = '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
-  
-    socket.onopen = function (event) {
-      socket.send(JSON.stringify({id: socket.id, "open": true}));
-      console.log('Master!');
-    }
-    
-   tool.onMouseMove = function (event) {
-     if (!master) {
-        point = {x: event.point.x, y: event.point.y};
-        var message = JSON.stringify({id: socket.id, color: colorStroke, point: point});
-
-        socket.send(message); 
-        path.strokeColor = colorStroke;
-        path.add(new paper.Point(event.point.x, event.point.y));       
-     }
-    }
-    
-    socket.onmessage = function(received) {
-      var data = JSON.parse(received.data);
-      if (data.id !== socket.id && "open" in data) {
-        master = false;
-        console.log('No longer master');
-      }
-     
-      
-      if (master) {
-        var point = data.point;
-        var color = data.color;
-        
-        if (!(data.id in userPaths)) {
-          userPaths[data.id] = new paper.Path();
-        }
-
-        if (data.id !== socket.id) {
-          var newPoint = new paper.Point(point.x, point.y);
-          userPaths[data.id].strokeColor = color;
-          userPaths[data.id].add(newPoint);
-        }
-        
-      }
-      
-
-      
-    };
-  
-  
-    socket.onclose = function(e) {
-      console.error('Chat socket closed unexpectedly');
-    }; */
-    
-
 </script>
 </html>
